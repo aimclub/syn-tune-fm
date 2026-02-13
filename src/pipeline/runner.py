@@ -126,11 +126,26 @@ class ExperimentRunner:
         # ---------------------------------------------------------
         # 3. Initialize & Train (Fine-tune) Model
         # ---------------------------------------------------------
+        # ---------------------------------------------------------
+        # 3. Initialize & Train (Fine-tune) Model
+        # ---------------------------------------------------------
         print(f"\n[3/5] Initializing Model: {self.cfg.model.name}")
         model = self._get_model()
         
         print(f"      Fine-tuning model on {len(X_syn)} samples...")
-        model.fit(X_syn, y_syn)
+        
+        # Если модель поддерживает fine_tune_weights, используем его (для SFT)
+        # Иначе используем обычный fit (для XGBoost/CatBoost)
+        if hasattr(model, 'fine_tune_weights'):
+            print("      >>> Triggering SFT (Gradient-based Fine-Tuning)...")
+            # Передаем параметры обучения из конфига, если нужно
+            ft_params = {
+                'ft_epochs': self.cfg.model.get('params', {}).get('ft_epochs', 10),
+                'ft_learning_rate': self.cfg.model.get('params', {}).get('ft_learning_rate', 2e-5)
+            }
+            model.fine_tune_weights(X_syn, y_syn, **ft_params)
+        else:
+            model.fit(X_syn, y_syn)
 
         # ---------------------------------------------------------
         # 4. Save Model

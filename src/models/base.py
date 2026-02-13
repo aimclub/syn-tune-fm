@@ -14,9 +14,16 @@ class BaseModelWrapper(ABC):
         self.model = None
 
     @abstractmethod
+    def fine_tune_weights(self, X: pd.DataFrame, y: pd.Series, **kwargs):
+        """
+        Дообучение уже существующей модели (Gradient-based или Incremental).
+        """
+        pass
+
+    @abstractmethod
     def fit(self, X: pd.DataFrame, y: pd.Series):
         """
-        Запуск обучения (или fine-tuning) модели.
+        Запуск ICL модели.
         """
         pass
 

@@ -10,7 +10,8 @@ scikit-learn>=1.0.0        # Метрики, сплиты, OpenML загрузч
 # --- Target Model ---
 # Убедитесь, что это актуальная версия для v2. 
 # Если v2 в приватном доступе или бете, тут может быть ссылка на git.
-tabpfn>=2.0.0              
+tabpfn>=2.0.0
+git+https://github.com/Lexsi-Labs/TabTune.git
 
 # --- Generators: Traditional, VAE, GAN ---
 # SDV (Synthetic Data Vault) включает в себя CTGAN, TVAE и GaussianCopula

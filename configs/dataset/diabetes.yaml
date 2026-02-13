@@ -3,3 +3,4 @@ params:
   dataset_id: 37  # Diabetes dataset
   target_column: "class"
   test_size: 0.2
+  balance: true
