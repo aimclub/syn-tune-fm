@@ -1,4 +1,4 @@
-name: gaussian
+name: mixed_model
 params:
   n_samples: 100
   seed: 42

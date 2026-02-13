@@ -1,0 +1,6 @@
+# TabArena-style dataset (OpenML credit-g)
+name: openml
+params:
+  dataset_id: 31
+  target_column: "class"
+  test_size: 0.2

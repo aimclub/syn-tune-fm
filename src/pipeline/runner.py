@@ -22,10 +22,12 @@ except ImportError:
     OpenMLDataLoader = None
 
 # --- Imports: Generators ---
-# As you implement new generators (CTGAN, LLM, etc.), import them here.
-# from src.generators.wrapper_ctgan import CTGANGenerator
-# from src.generators.wrapper_llm import GreatLLMGenerator
-# from src.generators.wrapper_gaussian import GaussianCopulaGenerator
+from src.generators.wrapper_gaussian import GaussianCopulaGenerator
+from src.generators.wrapper_ctgan import CTGANGenerator
+from src.generators.wrapper_tvae import TVAEGenerator
+from src.generators.wrapper_gmm import GMMGenerator
+from src.generators.wrapper_mixed_model import MixedModelGenerator
+from src.generators.wrapper_tableaugmentation import TableAugmentationGenerator
 
 class ExperimentRunner:
     def __init__(self, cfg: DictConfig):
@@ -57,17 +59,21 @@ class ExperimentRunner:
         name = self.cfg.generator.name
         params = self.cfg.generator.params
 
-        # Logic to select the generator. 
-        # You will uncomment these lines as you implement the wrapper files.
-        
-        # if name == 'gaussian':
-        #     return GaussianCopulaGenerator(**params)
-        # elif name == 'ctgan':
-        #     return CTGANGenerator(**params)
-        # elif name == 'llm_great':
-        #     return GreatLLMGenerator(**params)
-        
-        raise ValueError(f"Generator '{name}' is not yet implemented in the runner factory.")
+        if name == "gaussian":
+            return GaussianCopulaGenerator(**params)
+        elif name == "ctgan":
+            return CTGANGenerator(**params)
+        elif name == "tvae":
+            return TVAEGenerator(**params)
+        elif name == "gmm":
+            return GMMGenerator(**params)
+        elif name == "mixed_model":
+            return MixedModelGenerator(**params)
+        elif name == "tableaugmentation":
+            return TableAugmentationGenerator(**params)
+        raise ValueError(
+            f"Generator '{name}' is not implemented. Choose: gaussian, ctgan, tvae, gmm, mixed_model, tableaugmentation."
+        )
 
     def _get_model(self):
         """Factory method to get the model based on config."""
@@ -107,8 +113,7 @@ class ExperimentRunner:
             
             print("      Fitting generator on real train data...")
             generator.fit(X_train_real, y_train_real)
-            
-            n_samples = self.cfg.generator.get('n_samples', len(X_train_real))
+            n_samples = self.cfg.generator.params.get('n_samples', len(X_train_real))
             print(f"      Generating {n_samples} synthetic samples...")
             X_syn, y_syn = generator.generate(n_samples=n_samples)
             

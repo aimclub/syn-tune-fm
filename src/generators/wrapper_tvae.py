@@ -9,7 +9,7 @@ from src.generators.base import BaseDataGenerator
 warnings.filterwarnings("ignore")
 
 from sdv.metadata import SingleTableMetadata
-from sdv.single_table import CTGANSynthesizer
+from sdv.single_table import TVAESynthesizer
 
 LABEL_COL = "target"
 
@@ -40,10 +40,10 @@ def _ensure_classes_presence(X_syn, y_syn, X_real, y_real):
     return syn_df.drop(columns=[LABEL_COL], errors="ignore"), syn_df[LABEL_COL]
 
 
-class CTGANGenerator(BaseDataGenerator):
-    """Генератор CTGAN (GAN)"""
+class TVAEGenerator(BaseDataGenerator):
+    """Генератор TVAE (VAE)"""
 
-    def fit(self, X: pd.DataFrame, y: pd.Series) -> "CTGANGenerator":
+    def fit(self, X: pd.DataFrame, y: pd.Series) -> "TVAEGenerator":
         self._train_df = X.copy()
         self._train_df[LABEL_COL] = y.values
         self._X_real = X
@@ -60,13 +60,13 @@ class CTGANGenerator(BaseDataGenerator):
         try:
             metadata = SingleTableMetadata()
             metadata.detect_from_dataframe(df_ready)
-            model = CTGANSynthesizer(metadata, epochs=epochs, verbose=False)
+            model = TVAESynthesizer(metadata, epochs=epochs, verbose=False)
             model.fit(df_ready)
             synthetic_df = model.sample(num_rows=len(df_ready))
             X_syn = synthetic_df.drop(columns=[LABEL_COL], errors="ignore")
             y_syn = synthetic_df[LABEL_COL]
         except Exception as e:
-            print(f"  [CTGAN Error] {e}. Fallback to bootstrap.")
+            print(f"  [TVAE Error] {e}. Fallback to bootstrap.")
             s = self._train_df.sample(frac=1, replace=True).reset_index(drop=True)
             X_syn = s.drop(columns=[LABEL_COL])
             y_syn = s[LABEL_COL]

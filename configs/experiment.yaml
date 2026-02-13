@@ -1,17 +1,12 @@
 defaults:
   - _self_
+  - dataset: diabetes
+  - generator: gaussian
+  - model: tabpfn
 
 # Секция оценки
 evaluation:
-  metrics: 
+  metrics:
     - accuracy
     - log_loss
     - roc_auc
-
-data:
-  method: gaussian
-  # ...
-
-model:
-  name: tabpfn-v2
-  # ...

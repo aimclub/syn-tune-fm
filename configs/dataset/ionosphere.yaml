@@ -1,0 +1,6 @@
+# UCI/OpenML: Ionosphere (radar returns), 34 features, binary
+name: openml
+params:
+  dataset_id: 59
+  target_column: "class"
+  test_size: 0.2

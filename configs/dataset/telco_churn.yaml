@@ -1,0 +1,6 @@
+# Telco Customer Churn: отток клиентов — бинарный, несбалансированный таргет, много категориальных (услуги, контракт, способ оплаты)
+name: openml
+params:
+  dataset_id: 42178
+  target_column: "Churn"
+  test_size: 0.2

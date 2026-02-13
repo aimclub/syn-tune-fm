@@ -1,0 +1,5 @@
+name: tableaugmentation
+params:
+  n_samples: 100
+  seed: 42
+  reuse_original_target: true

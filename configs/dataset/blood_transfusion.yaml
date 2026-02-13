@@ -1,0 +1,6 @@
+# OpenML-CC18: Blood Transfusion Service Center, ~750 samples, binary, imbalanced
+name: openml
+params:
+  dataset_id: 1464
+  target_column: "Class"
+  test_size: 0.2

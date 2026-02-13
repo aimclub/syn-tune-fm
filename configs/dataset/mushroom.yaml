@@ -1,0 +1,6 @@
+# OpenML-CC18 / OpenML100: Mushroom (edible/poisonous), 8k samples, 22 categorical features
+name: openml
+params:
+  dataset_id: 24
+  target_column: "class"
+  test_size: 0.2
