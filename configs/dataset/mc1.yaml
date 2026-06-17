@@ -1,0 +1,6 @@
+# NASA MC1 — предсказание дефектов ПО (PROMISE). Бинарный таргет, очень сильный дисбаланс классов.
+name: openml
+params:
+  dataset_id: 1056
+  target_column: "c"
+  test_size: 0.2

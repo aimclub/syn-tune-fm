@@ -16,6 +16,5 @@ dependencies = [
 [project.urls]
 Upstream = "https://github.com/yandex-research/tab-ddpm"
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["tab_ddpm*"]
+[tool.setuptools]
+packages = ["tab_ddpm"]

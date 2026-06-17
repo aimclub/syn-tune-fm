@@ -1,4 +1,4 @@
-# Adult (Census): доход >50K — бинарный, сильный дисбаланс класса, много категориальных (образование, профессия, раса, пол и т.д.)
+# Adult (Census): income >50K — binary, strong class imbalance, many categorical features (education, occupation, race, gender, etc.)
 name: openml
 params:
   dataset_id: 179

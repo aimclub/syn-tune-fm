@@ -1,0 +1,12 @@
+# @package _global_
+# Optuna best trial 42, multirun/2026-05-20/12-14-20/5
+defaults:
+  - override /dataset: diamonds
+  - override /generator: tabddpm
+
+generator:
+  params:
+    epochs: 4642
+    batch_size: 545
+    lr: 0.0002878836609338484
+    num_timesteps: 50

@@ -1,5 +1,12 @@
+# TVAE (SDV). Имя группы Hydra: generator=tvae
 name: tvae
 params:
   n_samples: 100
   epochs: 300
+  batch_size: 500
+  embedding_dim: 128
+  compress_dims: [128, 128]
+  decompress_dims: [128, 128]
+  l2scale: 0.00001
+  loss_factor: 2
   seed: 42

@@ -26,7 +26,7 @@ class CSVDataLoader(BaseDataLoader):
         self.balance = balance
         self.sep = sep
 
-    def load(self):
+    def load_xy(self):
         print(f"Loading data from {self.train_path}...")
         
         if not os.path.exists(self.train_path):

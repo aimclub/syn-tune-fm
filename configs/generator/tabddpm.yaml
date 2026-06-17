@@ -1,3 +1,4 @@
+# TabDDPM. Имя группы Hydra: generator=tabddpm (в runner: name == "tabddpm")
 name: tabddpm
 params:
   n_samples: 100
@@ -6,4 +7,8 @@ params:
   batch_size: 2048
   lr: 0.0001
   num_timesteps: 100
+  dim_t: 128
+  rtdl_d_layers: [128, 128]
+  rtdl_dropout: 0.0
+  # cuda | cpu — подставьте cuda при наличии GPU
   device: "cpu"

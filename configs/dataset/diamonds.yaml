@@ -1,0 +1,13 @@
+# Diamonds (OpenML 42225). Регрессия price; полный датасет ~54k строк — subsample для скорости.
+# 3 категориальные фичи: cut, color, clarity.
+name: openml
+params:
+  dataset_id: 42225
+  target_column: price
+  test_size: 0.2
+  task_type: regression
+  max_rows: 5000
+  evaluation_metrics:
+    - rmse
+    - mae
+  hpo_js_single_column_default: color

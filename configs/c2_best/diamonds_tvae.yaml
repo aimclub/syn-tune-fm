@@ -1,0 +1,15 @@
+# @package _global_
+# Optuna best trial 37, multirun/2026-05-20/12-14-20/4
+defaults:
+  - override /dataset: diamonds
+  - override /generator: tvae
+
+generator:
+  params:
+    epochs: 400
+    batch_size: 64
+    embedding_dim: 150
+    compress_dims: [350]
+    decompress_dims: [350, 350, 350, 350]
+    l2scale: 0.0001
+    loss_factor: 2

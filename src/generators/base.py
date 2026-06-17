@@ -60,6 +60,11 @@ class BaseDataGenerator(ABC):
         """Store Hydra-style params in self.params."""
         self.params = kwargs
         self.is_fitted = False
+        self._task_type: str = "classification"
+
+    def set_task_type(self, task_type: str) -> None:
+        """classification | regression — used for sampling / post-processing."""
+        self._task_type = (task_type or "classification").strip().lower()
 
     @abstractmethod
     def fit(self, X: pd.DataFrame, y: pd.Series) -> "BaseDataGenerator":

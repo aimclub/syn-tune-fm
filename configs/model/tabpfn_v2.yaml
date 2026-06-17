@@ -1,5 +1,7 @@
 name: tabpfn_v2
 params:
+  # v2.5 = weights from Prior-Labs/tabpfn_2_5 (not tabpfn_2_6). License/HF auth may still run once.
+  tabpfn_model_version: v2.5
   device: "mps" 
   n_estimators: 1
   fit_mode: 'batched'

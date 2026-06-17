@@ -34,8 +34,18 @@ class TabularPreprocessor:
             self.encoders[col] = enc
 
         # 3. Target scaling
+        # TabPFN classification labels are usually integer class codes.
+        # Scaling such integer-like targets breaks classification.
         if schema.target_col and pd.api.types.is_numeric_dtype(df[schema.target_col]):
-            if df[schema.target_col].nunique() > 20: 
+            s = df[schema.target_col].dropna()
+            is_integer_like = False
+            if pd.api.types.is_integer_dtype(s):
+                is_integer_like = True
+            else:
+                # integer-valued numeric (e.g. 0.0, 1.0, ...)
+                is_integer_like = bool((s.astype("float64") % 1 == 0).all())
+
+            if (not is_integer_like) and (df[schema.target_col].nunique() > 20):
                 self.target_scaler = StandardScaler()
                 self.target_scaler.fit(df[[schema.target_col]].dropna())
 

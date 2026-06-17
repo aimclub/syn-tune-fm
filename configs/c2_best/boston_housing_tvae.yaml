@@ -1,0 +1,15 @@
+# @package _global_
+# Optuna best trial 45, multirun/2026-05-20/12-14-20/1
+defaults:
+  - override /dataset: boston_housing
+  - override /generator: tvae
+
+generator:
+  params:
+    epochs: 500
+    batch_size: 64
+    embedding_dim: 50
+    compress_dims: [500, 500, 500]
+    decompress_dims: [450]
+    l2scale: 0.001
+    loss_factor: 2

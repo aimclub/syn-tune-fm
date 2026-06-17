@@ -1,4 +1,4 @@
-# Telco Customer Churn: отток клиентов — бинарный, несбалансированный таргет, много категориальных (услуги, контракт, способ оплаты)
+# Telco Customer Churn: binary classification, imbalanced target, many categorical features (services, contract, payment method)
 name: openml
 params:
   dataset_id: 42178

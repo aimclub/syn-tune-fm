@@ -1,0 +1,12 @@
+# @package _global_
+# Optuna best trial 32, multirun/2026-05-20/12-14-20/2
+defaults:
+  - override /dataset: boston_housing
+  - override /generator: tabddpm
+
+generator:
+  params:
+    epochs: 3910
+    batch_size: 772
+    lr: 0.0002970103644134441
+    num_timesteps: 50

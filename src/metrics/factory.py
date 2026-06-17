@@ -1,10 +1,22 @@
-from src.metrics.classification import AccuracyMetric, RocAucMetric, LogLossMetric
+from src.metrics.classification import (
+    AccuracyMetric,
+    BalancedAccuracyMetric,
+    LogLossMetric,
+    MacroF1Metric,
+    RocAucMetric,
+)
+from src.metrics.regression import MAEMetric, RMSEMetric
+
 
 class MetricFactory:
     _registry = {
         "accuracy": AccuracyMetric,
         "roc_auc": RocAucMetric,
-        "log_loss": LogLossMetric
+        "log_loss": LogLossMetric,
+        "macro_f1": MacroF1Metric,
+        "balanced_accuracy": BalancedAccuracyMetric,
+        "rmse": RMSEMetric,
+        "mae": MAEMetric,
     }
 
     @staticmethod

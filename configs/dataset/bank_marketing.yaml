@@ -1,0 +1,6 @@
+# UCI Bank Marketing (OpenML-CC18). Бинарная классификация: подписка на срочный вклад (~88% / ~12%).
+name: openml
+params:
+  dataset_id: 1461
+  target_column: "Class"
+  test_size: 0.2
