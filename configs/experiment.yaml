@@ -1,12 +1,51 @@
+# configs/experiment.yaml
 defaults:
   - _self_
-  - dataset: iris    
-  - generator: gaussian  
+  - dataset: credit_g    
+  - generator: gaussian
   - model: tabpfn_v2        
 
-# Секция оценки
+minority_fraction: 0.1
+
+experiment_setup:
+  n_folds: 5
+  cv_random_state: 42
+  tuning_split_size: 0.2
+  tuning_random_state: 5
+  optuna_trials: 5
+  run_hpo: false
+  # Fixed shortlist of the 6 most imbalanced datasets by target distribution.
+  dataset_shortlist:
+    - mc1
+    - bank_marketing
+    - pc4
+    - blood_transfusion
+    - adult
+    - parkinsons
+
+variants:
+  C0_No_FT:
+    finetune: false
+    balancing: none
+  C1_FT_Imbal:
+    finetune: true
+    balancing: none
+  C2_FT_SynBal:
+    finetune: true
+    balancing: synthetic
+  C3_FT_RandBal:
+    finetune: true
+    balancing: random_over
+  C4_FT_DownBal:
+    finetune: true
+    balancing: random_under
+
 evaluation:
   metrics:
-    - accuracy
+    - macro_f1
+    - balanced_accuracy
     - log_loss
-    - roc_auc
+
+hydra:
+  sweeper:
+    max_batch_size: 1

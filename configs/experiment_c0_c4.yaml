@@ -1,0 +1,39 @@
+# C0–C4; генератор по умолчанию — Gaussian Copula. Сравнение CTGAN / TVAE / TabDDPM / Gaussian — см. experiment_c0_c4_generators.yaml
+defaults:
+  - _self_
+  - dataset: credit_g
+  - generator: gaussian
+  - model: tabpfn_v2
+
+minority_fraction: null
+
+experiment_setup:
+  n_folds: 5
+  cv_random_state: 42
+  tuning_split_size: 0.2
+  tuning_random_state: 5
+  optuna_trials: 10
+  run_hpo: true
+
+variants:
+  C0_No_FT:
+    finetune: false
+    balancing: none
+  C1_FT_Imbal:
+    finetune: true
+    balancing: none
+  C2_FT_SynBal:
+    finetune: true
+    balancing: synthetic
+  C3_FT_RandBal:
+    finetune: true
+    balancing: random_over
+  C4_FT_DownBal:
+    finetune: true
+    balancing: random_under
+
+evaluation:
+  metrics:
+    - macro_f1
+    - balanced_accuracy
+    - log_loss

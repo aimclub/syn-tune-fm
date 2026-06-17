@@ -1,0 +1,153 @@
+# C0–C4 (все режимы) с выбором генератора синтетики для C2 и для Optuna/HPO.
+#
+# ВАЖНО: за один запуск используется РОВНО ОДИН generator из defaults / CLI.
+# Чтобы прогнать CTGAN + TVAE + TabDDPM подряд, нужен Hydra multirun: один раз `--multirun`
+# (или один раз `-m` — это то же самое, что `--multirun`, НЕ «ось сетки»).
+# Несколько осей sweep: несколько `ключ=a,b` через пробел после одного `--multirun`, без повторного `-m`.
+#
+# Поддерживаемые генераторы (см. configs/generator/*.yaml):
+#   - gaussian  — Gaussian Copula (SDV)
+#   - ctgan     — CTGAN
+#   - tvae      — TVAE
+#   - tabddpm   — TabDDPM
+#
+# Один генератор (по умолчанию — gaussian):
+#   python run_experiment.py --config-name experiment_c0_c4_generators dataset=iris
+#
+# Несколько генераторов подряд (отдельный полный прогон C0–C4 на КАЖДЫЙ generator — избыточно:
+# C0,C1,C3,C4 от выбора CTGAN/TVAE не зависят, меняется только C2 с synthetic balancing).
+# Чтобы сравнивать генераторы без лишних пересчётов, добавьте:
+#   experiment_setup.run_only_synthetic_balancing_variants=true
+# Тогда в каждом job останется только вариант(ы) с balancing: synthetic (обычно C2_FT_SynBal).
+#
+# Пример: три генератора, только синтетический режим, без HPO:
+#   python run_experiment.py --config-name experiment_c0_c4_generators -m generator=ctgan,tvae,tabddpm \
+#     dataset=iris experiment_setup.run_hpo=false experiment_setup.run_only_synthetic_balancing_variants=true
+#
+# Пример: C0,C1,C3,C4 на двух датасетах (генератор не нужен — один job на датасет):
+#   python run_experiment.py --multirun --config-name experiment_c0_c4_generators \
+#     dataset=boston_housing,diamonds experiment_setup.run_only_non_synthetic_balancing_variants=true \
+#     experiment_setup.run_hpo=false model.params.device=cuda
+#
+# Несколько генераторов подряд (полная сетка C0–C4 каждый раз — если нужно именно так):
+#   python run_experiment.py --config-name experiment_c0_c4_generators -m generator=ctgan,tvae,tabddpm dataset=iris experiment_setup.run_hpo=false
+#
+# Все четыре включая gaussian:
+#   python run_experiment.py --config-name experiment_c0_c4_generators -m generator=gaussian,ctgan,tvae,tabddpm dataset=iris experiment_setup.run_hpo=false
+#
+# Пример: Ames + Mercedes, только synthetic C2, три генератора, HPO по всем кат. vs одной колонке:
+#   Регрессия (task_type=regression): TabDDPM — совместная диффузия [X, y].
+#   python run_experiment.py --multirun --config-name experiment_c0_c4_generators \
+#     dataset=house_prices,mercedes_benz generator=ctgan,tvae,tabddpm experiment_setup.hpo_js_mode=all,single \
+#     experiment_setup.run_only_synthetic_balancing_variants=true experiment_setup.run_hpo=true \
+#     experiment_setup.optuna_trials=60 \
+#     ++generator.params.device=cuda model.params.device=cuda
+#
+# Компактный регрессионный датасет с 2 категориальными фичами (CHAS, RAD) — быстрее house_prices:
+#   python run_experiment.py --multirun --config-name experiment_c0_c4_generators \
+#     dataset=boston_housing generator=ctgan,tvae,tabddpm experiment_setup.hpo_js_mode=all \
+#     experiment_setup.run_only_synthetic_balancing_variants=true experiment_setup.run_hpo=true \
+#     experiment_setup.optuna_trials=20 \
+#     ++generator.params.device=cuda model.params.device=cuda
+#
+# Abalone (4177 строк, 1 cat Sex) или Diamonds (5000 subsample, 3 cat cut/color/clarity):
+#   dataset=abalone,diamonds
+#
+# TabPFN без интерактива: положите ключ в один из вариантов — export TABPFN_TOKEN=…,
+#   export PRIORLABS_API_KEY=…, файл ~/.config/tabpfn/token (одна строка), или .env.local в корне репо
+#   с TABPFN_TOKEN=… или PRIORLABS_API_KEY=… (см. src/utils/tabpfn_env.py). В аккаунте примите лицензию.
+# Multirun по умолчанию последовательный (hydra.sweeper.max_batch_size=1), чтобы не гоняться за кэшем TabPFN.
+#
+# Multirun: в PowerShell не используйте «-m» — это флаг самого python. Нужно «--multirun»
+# и кавычки вокруг sweep с запятыми:
+#   python run_experiment.py --multirun --config-name experiment_c0_c4_generators dataset=iris `
+#     "generator=ctgan,tvae,tabddpm" model.params.device=cpu experiment_setup.run_hpo=false
+#
+# Старый шорткат «-m» для Hydra в bash иногда пишут как отдельный аргумент; в PowerShell безопаснее --multirun.
+# Не смешивайте «--multirun» и несколько «-m …»: каждый «-m» = снова multirun-флаг, второй «-m» даёт unrecognized arguments.
+#
+supported_generators:
+  - gaussian
+  - ctgan
+  - tvae
+  - tabddpm
+
+defaults:
+  - _self_
+  - dataset: credit_g
+  - generator: gaussian
+  - model: tabpfn_v2
+
+minority_fraction: null
+
+experiment_setup:
+  n_folds: 5
+  cv_random_state: 42
+  tuning_split_size: 0.2
+  tuning_random_state: 5
+  optuna_trials: 10
+  run_hpo: true
+  # Fixed shortlist of the 6 most imbalanced datasets by target distribution.
+  dataset_shortlist:
+    - mc1
+    - bank_marketing
+    - pc4
+    - blood_transfusion
+    - adult
+    - parkinsons
+    - house_prices
+    - mercedes_benz
+    - boston_housing
+    - abalone
+    - diamonds
+  # true: прогонять только variants с balancing: synthetic (генератор используется в C2). Удобно при multirun по generator=...
+  run_only_synthetic_balancing_variants: false
+  # true: только C0, C1, C3, C4 (без C2). Удобно после отдельного multirun по generator=ctgan,tvae,tabddpm.
+  run_only_non_synthetic_balancing_variants: false
+  # HPO (Optuna): какие категориальные/дискретные колонки дают вклад в JS-часть целевого mean(...)
+  # (числовые по-прежнему все continuous из схемы — Wasserstein).
+  #   all   — все discrete/categorical из схемы (как раньше).
+  #   single — только одна колонка: experiment_setup.hpo_js_single_column или
+  #            dataset.params.hpo_js_single_column_default из yaml датасета.
+  #   multi — синоним all (удобно в multirun).
+  hpo_js_mode: all
+  hpo_js_single_column: null
+  # Для task_type=regression + balancing=synthetic:
+  #   categorical_balance — для каждой категориальной/discrete колонки добиваем редкие
+  #     категории conditional synthetic samples до частоты мажоритарного класса в колонке;
+  #   augment — joint generate (добавить synthetic_regression_augment_ratio * |train| строк).
+  synthetic_regression_mode: categorical_balance
+  synthetic_regression_augment_ratio: 1.0
+  # C3/C4 на регрессии: ROS/RUS по квантильным бинам непрерывного target.
+  regression_random_balance_bins: 5
+  # Лимит строк train после балансировки (C2/C3/C4). null = не обрезать (раньше было 5000).
+  # Задавайте число только если упираетесь в OOM на finetune/ICL.
+  max_train_context_size: null
+
+variants:
+  C0_No_FT:
+    finetune: false
+    balancing: none
+  C1_FT_Imbal:
+    finetune: true
+    balancing: none
+  C2_FT_SynBal:
+    finetune: true
+    balancing: synthetic
+  C3_FT_RandBal:
+    finetune: true
+    balancing: random_over
+  C4_FT_DownBal:
+    finetune: true
+    balancing: random_under
+
+evaluation:
+  metrics:
+    - macro_f1
+    - balanced_accuracy
+    - log_loss
+
+# Multirun: one job at a time so parallel TabPFN processes do not race on ~/.cache/tabpfn auth.
+hydra:
+  sweeper:
+    max_batch_size: 1

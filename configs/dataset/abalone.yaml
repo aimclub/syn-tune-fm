@@ -1,0 +1,11 @@
+# Abalone (OpenML 183). Регрессия Class_number_of_rings (возраст), 4177 строк, 1 кат. фича Sex (M/I/F).
+name: openml
+params:
+  dataset_id: 183
+  target_column: Class_number_of_rings
+  test_size: 0.2
+  task_type: regression
+  evaluation_metrics:
+    - rmse
+    - mae
+  hpo_js_single_column_default: Sex

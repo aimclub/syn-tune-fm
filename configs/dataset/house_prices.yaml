@@ -1,0 +1,12 @@
+# Ames Housing (OpenML 42165). Регрессия SalePrice — непрерывный таргет (без квантильного биннинга).
+# Synthetic balancing: joint generate (CTGAN/TVAE/Gaussian) или TabDDPM (совместная диффузия X+y), см. synthetic_regression_augment_ratio.
+name: openml
+params:
+  dataset_id: 42165
+  target_column: SalePrice
+  test_size: 0.2
+  task_type: regression
+  evaluation_metrics:
+    - rmse
+    - mae
+  hpo_js_single_column_default: Neighborhood

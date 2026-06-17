@@ -1,0 +1,11 @@
+# Mercedes-Benz Greener Manufacturing (OpenML 42570). Регрессия по y — непрерывный таргет.
+name: openml
+params:
+  dataset_id: 42570
+  target_column: "y"
+  test_size: 0.2
+  task_type: regression
+  evaluation_metrics:
+    - rmse
+    - mae
+  hpo_js_single_column_default: X3

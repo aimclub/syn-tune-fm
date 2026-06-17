@@ -11,6 +11,7 @@ from typing import Any, Dict, Optional, Tuple, Type
 
 import numpy as np
 import pandas as pd
+import torch
 from pandas.api.types import CategoricalDtype
 from sdv.metadata import SingleTableMetadata
 
@@ -24,8 +25,22 @@ from src.generators.base import (
 warnings.filterwarnings("ignore")
 
 
-
-
+def sdv_cuda_flag_from_params(params: Optional[Dict[str, Any]]) -> bool:
+    """SDV synthesizers take ``cuda: bool``. Honor ``device`` in params (Hydra ++generator.params.device=...)."""
+    d = str((params or {}).get("device", "")).strip().lower()
+    if d in ("cpu", "false", "0", "no"):
+        return False
+    if d in ("cuda", "gpu", "true", "1", "yes") or d.startswith("cuda:"):
+        if not torch.cuda.is_available():
+            warnings.warn(
+                "generator.params.device requests CUDA but torch.cuda.is_available() is False; "
+                "using CPU for SDV.",
+                UserWarning,
+                stacklevel=3,
+            )
+            return False
+        return True
+    return bool(torch.cuda.is_available())
 def sdv_fix_dtypes(df: pd.DataFrame) -> pd.DataFrame:
     df_clean = df.copy()
     for col in df_clean.columns:
@@ -155,9 +170,13 @@ class SdvSingleTableGenerator(BaseDataGenerator, ABC):
         synthetic_df = self._synthesizer.sample(num_rows=n)
         X_syn = synthetic_df.drop(columns=[lc], errors="ignore")
         y_syn = synthetic_df[lc]
-        X_syn, y_syn = sdv_ensure_classes_presence(
-            X_syn, y_syn, self._X_real, self._y_real, label_col=lc
-        )
+        if getattr(self, "_task_type", "classification") == "regression":
+            if self._y_real is not None and self._y_real.name:
+                y_syn = y_syn.rename(self._y_real.name)
+        else:
+            X_syn, y_syn = sdv_ensure_classes_presence(
+                X_syn, y_syn, self._X_real, self._y_real, label_col=lc
+            )
         if len(X_syn) > n:
             X_syn, y_syn = X_syn.iloc[:n], y_syn.iloc[:n]
         elif len(X_syn) < n:

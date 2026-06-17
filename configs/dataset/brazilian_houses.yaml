@@ -1,0 +1,11 @@
+# Brazilian Houses (OpenML 42688). Регрессия total_(BRL), ~10.7k строк, 7 категориальных фич.
+name: openml
+params:
+  dataset_id: 42688
+  target_column: "total_(BRL)"
+  test_size: 0.2
+  task_type: regression
+  evaluation_metrics:
+    - rmse
+    - mae
+  hpo_js_single_column_default: city

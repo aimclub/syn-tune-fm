@@ -6,10 +6,17 @@ __pycache__/
 *.egg-info/
 *.py[cod]
 .venv/
+.ipynb_checkpoints/
+Untitled.ipynb
 
 # Hydra outputs
 outputs/
 multirun/
+comparison_outputs/
+
+# Local experiment scripts and caches
+scripts/
+experiments/__pycache__/
 
 # Data (если вы скачали CSV локально)
 data/

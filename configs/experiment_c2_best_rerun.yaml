@@ -1,0 +1,20 @@
+# C2 (synthetic only) с фиксированными best-параметрами генератора из Optuna (configs/c2_best/).
+# Один multirun: 6 jobs = 2 датасета × 3 генератора, у каждого свои params.
+#
+#   python run_experiment.py --multirun --config-name experiment_c2_best_rerun \
+#     c2_best=boston_housing_ctgan,boston_housing_tvae,boston_housing_tabddpm,diamonds_ctgan,diamonds_tvae,diamonds_tabddpm \
+#     ++generator.params.device=cuda model.params.device=cuda
+#
+# Только adult + ctgan (best из multirun/2026-05-10/13-51-01):
+#     c2_best=adult_ctgan
+
+defaults:
+  - experiment_c0_c4_generators
+  - c2_best: boston_housing_ctgan
+  - _self_
+
+experiment_setup:
+  run_only_synthetic_balancing_variants: true
+  run_only_non_synthetic_balancing_variants: false
+  run_hpo: false
+  max_train_context_size: null

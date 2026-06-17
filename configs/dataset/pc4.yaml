@@ -1,0 +1,6 @@
+# NASA PC4 — предсказание дефектов ПО (PROMISE). Бинарный таргет, сильный дисбаланс (дефектов мало).
+name: openml
+params:
+  dataset_id: 1049
+  target_column: "c"
+  test_size: 0.2

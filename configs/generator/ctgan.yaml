@@ -1,5 +1,14 @@
+# CTGAN (SDV). Имя группы Hydra: generator=ctgan
 name: ctgan
 params:
   n_samples: 100
   epochs: 300
+  batch_size: 500
+  embedding_dim: 128
+  generator_dim: [256, 256]
+  discriminator_dim: [256, 256]
+  generator_lr: 0.0002
+  discriminator_lr: 0.0002
+  discriminator_steps: 1
+  pac: 10
   seed: 42

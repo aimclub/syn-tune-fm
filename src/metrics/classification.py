@@ -1,6 +1,30 @@
-from sklearn.metrics import accuracy_score, roc_auc_score, log_loss
+from sklearn.metrics import (
+    accuracy_score,
+    balanced_accuracy_score,
+    f1_score,
+    log_loss,
+    roc_auc_score,
+)
 from src.metrics.interface import BaseMetric
 import numpy as np
+
+
+class MacroF1Metric(BaseMetric):
+    @property
+    def name(self):
+        return "macro_f1"
+
+    def calculate(self, y_true, y_pred, y_probs=None):
+        return f1_score(y_true, y_pred, average="macro", zero_division=0)
+
+
+class BalancedAccuracyMetric(BaseMetric):
+    @property
+    def name(self):
+        return "balanced_accuracy"
+
+    def calculate(self, y_true, y_pred, y_probs=None):
+        return balanced_accuracy_score(y_true, y_pred)
 
 class AccuracyMetric(BaseMetric):
     @property

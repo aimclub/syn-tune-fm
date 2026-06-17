@@ -1,4 +1,8 @@
+# Gaussian Copula (SDV). Имя группы Hydra: generator=gaussian
 name: gaussian
 params:
   n_samples: 100
   seed: 42
+  # Present so Hydra struct can merge shared smoke overrides (e.g. epochs) across generator sweeps;
+  # Gaussian Copula ignores this key — it is not passed to SDV synthesizer kwargs.
+  epochs: 1

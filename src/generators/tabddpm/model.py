@@ -7,6 +7,8 @@ Uses ``tab_ddpm`` from yandex-research/tab-ddpm, installed via
 
 from __future__ import annotations
 
+import logging
+import time
 import warnings
 from itertools import cycle
 from typing import Any, Dict, List, Optional, Tuple
@@ -28,6 +30,7 @@ warnings.filterwarnings("ignore")
 
 
 LABEL_COL = "target"
+LOGGER = logging.getLogger(__name__)
 
 
 class TabDDPMGenerator(BaseDataGenerator):
@@ -90,6 +93,12 @@ class TabDDPMGenerator(BaseDataGenerator):
 
         self._X_train: Optional[pd.DataFrame] = None
         self._y_train: Optional[pd.Series] = None
+
+        # Regression: joint diffusion on [X_proc, y_standardized]; no discrete y mapping.
+        self._regression_joint: bool = False
+        self._x_proc_dim: int = 0
+        self._y_mean: float = 0.0
+        self._y_std: float = 1.0
 
         self.is_fitted = False
 
@@ -191,69 +200,162 @@ class TabDDPMGenerator(BaseDataGenerator):
             ) from e
 
         self._orig_dtypes = {c: X[c].dtype for c in X.columns}
+        LOGGER.info(
+            "[TabDDPM] fit started | rows=%s cols=%s epochs=%s batch_size=%s lr=%s timesteps=%s device=%s",
+            len(X),
+            X.shape[1],
+            self.epochs,
+            self.batch_size,
+            self.lr,
+            self.num_timesteps,
+            self.device_str,
+        )
 
         torch.manual_seed(self.seed)
         np.random.seed(self.seed)
 
         self._fit_preprocessors(X)
         X_proc = self._transform_X(X)
-
-        self._fit_y_mapping(y)
-        y_enc = self._encode_y(y)
-
-        n_features = int(X_proc.shape[1])
-        n_classes = int(len(self._y_classes))
-
-        K_vec = np.array([0], dtype=np.int64)
-
+        self._regression_joint = getattr(self, "_task_type", "classification") == "regression"
         device = self._get_device()
-
+        K_vec = np.array([0], dtype=np.int64)
         rtdl_params = {"d_layers": self.rtdl_d_layers, "dropout": self.rtdl_dropout}
-        self._denoise_fn = MLPDiffusion(
-            d_in=n_features,
-            num_classes=n_classes,
-            is_y_cond=True,
-            rtdl_params=rtdl_params,
-            dim_t=self.dim_t,
-        ).to(device)
 
-        self._diffusion = GaussianMultinomialDiffusion(
-            num_classes=K_vec,
-            num_numerical_features=n_features,
-            denoise_fn=self._denoise_fn,
-            num_timesteps=self.num_timesteps,
-            gaussian_loss_type="mse",
-            scheduler="cosine",
-            device=device,
-        )
-        self._diffusion.to(device)
+        if self._regression_joint:
+            y_f = pd.to_numeric(y, errors="coerce").astype(np.float64).values
+            if np.any(np.isnan(y_f)):
+                raise ValueError("Regression target contains NaN after coercion to float.")
+            self._y_mean = float(np.mean(y_f))
+            s = float(np.std(y_f))
+            self._y_std = s if s > 1e-8 else 1.0
+            y_std = (y_f - self._y_mean) / self._y_std
+            x_joint = np.concatenate(
+                [X_proc.astype(np.float32), y_std.reshape(-1, 1).astype(np.float32)],
+                axis=1,
+            )
+            self._x_proc_dim = int(X_proc.shape[1])
+            n_total = int(x_joint.shape[1])
 
-        counts = np.bincount(y_enc, minlength=n_classes).astype(np.float32)
-        self._y_dist = torch.tensor(counts, dtype=torch.float32, device=device)
+            self._denoise_fn = MLPDiffusion(
+                d_in=n_total,
+                num_classes=0,
+                is_y_cond=False,
+                rtdl_params=rtdl_params,
+                dim_t=self.dim_t,
+            ).to(device)
 
-        x_tensor = torch.tensor(X_proc, dtype=torch.float32)
-        y_tensor = torch.tensor(y_enc, dtype=torch.long)
-        ds = TensorDataset(x_tensor, y_tensor)
-        loader = DataLoader(ds, batch_size=min(self.batch_size, len(ds)), shuffle=True, drop_last=False)
+            self._diffusion = GaussianMultinomialDiffusion(
+                num_classes=K_vec,
+                num_numerical_features=n_total,
+                denoise_fn=self._denoise_fn,
+                num_timesteps=self.num_timesteps,
+                gaussian_loss_type="mse",
+                scheduler="cosine",
+                device=device,
+            )
+            self._diffusion.to(device)
+
+            self._y_dist = torch.tensor([1.0], dtype=torch.float32, device=device)
+            self._y_classes = []
+            self._y_to_idx = {}
+            self._idx_to_y = {}
+
+            x_tensor = torch.tensor(x_joint, dtype=torch.float32)
+            ds = TensorDataset(x_tensor)
+            loader = DataLoader(ds, batch_size=min(self.batch_size, len(ds)), shuffle=True, drop_last=False)
+
+            LOGGER.info(
+                "[TabDDPM] regression joint diffusion | x_dim=%s (features + 1 y std), y_mean=%.6g y_std=%.6g",
+                n_total,
+                self._y_mean,
+                self._y_std,
+            )
+        else:
+            self._fit_y_mapping(y)
+            y_enc = self._encode_y(y)
+
+            n_features = int(X_proc.shape[1])
+            n_classes = int(len(self._y_classes))
+
+            self._denoise_fn = MLPDiffusion(
+                d_in=n_features,
+                num_classes=n_classes,
+                is_y_cond=True,
+                rtdl_params=rtdl_params,
+                dim_t=self.dim_t,
+            ).to(device)
+
+            self._diffusion = GaussianMultinomialDiffusion(
+                num_classes=K_vec,
+                num_numerical_features=n_features,
+                denoise_fn=self._denoise_fn,
+                num_timesteps=self.num_timesteps,
+                gaussian_loss_type="mse",
+                scheduler="cosine",
+                device=device,
+            )
+            self._diffusion.to(device)
+
+            counts = np.bincount(y_enc, minlength=n_classes).astype(np.float32)
+            self._y_dist = torch.tensor(counts, dtype=torch.float32, device=device)
+
+            x_tensor = torch.tensor(X_proc, dtype=torch.float32)
+            y_tensor = torch.tensor(y_enc, dtype=torch.long)
+            ds = TensorDataset(x_tensor, y_tensor)
+            loader = DataLoader(ds, batch_size=min(self.batch_size, len(ds)), shuffle=True, drop_last=False)
 
         optimizer = torch.optim.AdamW(self._denoise_fn.parameters(), lr=self.lr)
         self._diffusion.train()
         self._denoise_fn.train()
+        run_started = time.time()
+        log_every = max(1, min(500, self.epochs // 20 if self.epochs > 20 else 1))
 
-        for step, (xb, yb) in zip(range(self.epochs), cycle(loader)):
-            xb = xb.to(device)
-            yb = yb.to(device)
-            out_dict = {"y": yb}
+        if self._regression_joint:
+            for step, (xb,) in zip(range(self.epochs), cycle(loader)):
+                xb = xb.to(device)
+                loss_multi, loss_gauss = self._diffusion.mixed_loss(xb, {})
+                loss = loss_multi + loss_gauss
 
-            loss_multi, loss_gauss = self._diffusion.mixed_loss(xb, out_dict)
-            loss = loss_multi + loss_gauss
+                optimizer.zero_grad()
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(self._denoise_fn.parameters(), 1.0)
+                optimizer.step()
 
-            optimizer.zero_grad()
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(self._denoise_fn.parameters(), 1.0)
-            optimizer.step()
+                if (step + 1) % log_every == 0 or (step + 1) == self.epochs:
+                    elapsed = time.time() - run_started
+                    LOGGER.info(
+                        "[TabDDPM] train step %s/%s | loss=%.6f | elapsed=%.1fs",
+                        step + 1,
+                        self.epochs,
+                        float(loss.detach().item()),
+                        elapsed,
+                    )
+        else:
+            for step, (xb, yb) in zip(range(self.epochs), cycle(loader)):
+                xb = xb.to(device)
+                yb = yb.to(device)
+                out_dict = {"y": yb}
+
+                loss_multi, loss_gauss = self._diffusion.mixed_loss(xb, out_dict)
+                loss = loss_multi + loss_gauss
+
+                optimizer.zero_grad()
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(self._denoise_fn.parameters(), 1.0)
+                optimizer.step()
+
+                if (step + 1) % log_every == 0 or (step + 1) == self.epochs:
+                    elapsed = time.time() - run_started
+                    LOGGER.info(
+                        "[TabDDPM] train step %s/%s | loss=%.6f | elapsed=%.1fs",
+                        step + 1,
+                        self.epochs,
+                        float(loss.detach().item()),
+                        elapsed,
+                    )
 
         self.is_fitted = True
+        LOGGER.info("[TabDDPM] fit completed in %.1fs", time.time() - run_started)
         return self
 
     def _sample(self, n: int, y_dist: torch.Tensor) -> Tuple[np.ndarray, np.ndarray]:
@@ -283,9 +385,17 @@ class TabDDPMGenerator(BaseDataGenerator):
         if self._y_dist is None:
             raise RuntimeError("Missing unconditional y_dist.")
 
-        x_np, y_enc = self._sample(n, self._y_dist)
+        x_np, y_dummy = self._sample(n, self._y_dist)
+        if getattr(self, "_regression_joint", False):
+            X_syn = self._decode_X(x_np[:, : self._x_proc_dim])
+            y_std_syn = x_np[:, self._x_proc_dim]
+            y_vals = y_std_syn.astype(np.float64) * self._y_std + self._y_mean
+            y_name = self._y_train.name if self._y_train is not None and self._y_train.name else LABEL_COL
+            y_syn = pd.Series(y_vals, name=y_name)
+            return X_syn, y_syn
         X_syn = self._decode_X(x_np)
-        y_syn = pd.Series([self._idx_to_y[int(i)] for i in y_enc], name="target")
+        y_nm = self._y_train.name if self._y_train is not None and self._y_train.name else LABEL_COL
+        y_syn = pd.Series([self._idx_to_y[int(i)] for i in y_dummy], name=y_nm)
         return X_syn, y_syn
 
     def conditional_sampling(
@@ -341,12 +451,22 @@ class TabDDPMGenerator(BaseDataGenerator):
                 rtdl_dropout=self.rtdl_dropout,
                 dim_t=self.dim_t,
             )
+            sub_gen.set_task_type(getattr(self, "_task_type", "classification"))
             sub_gen.fit(X_sub, y_sub)
             X_syn, y_syn = sub_gen.generate(n_samples=n_samples)
             X_syn = enforce_feature_conditions_on_X(X_syn, fc, label_col=LABEL_COL)
             if target_value is not None:
-                y_syn = pd.Series([int(target_value)] * len(X_syn), name="target")
+                if getattr(self, "_regression_joint", False):
+                    y_syn = pd.Series([float(target_value)] * len(X_syn), name=y_syn.name)
+                else:
+                    y_syn = pd.Series([int(target_value)] * len(X_syn), name=y_syn.name)
             return X_syn, y_syn
+
+        if getattr(self, "_regression_joint", False):
+            raise ValueError(
+                "Regression TabDDPM does not support class-conditional sampling without "
+                "feature_conditions (no discrete y index). Use generate() or pass feature_conditions."
+            )
 
         if int(target_value) not in self._y_to_idx:
             raise ValueError(f"Unknown target_value={target_value} for this fitted generator.")
@@ -358,6 +478,6 @@ class TabDDPMGenerator(BaseDataGenerator):
 
         x_np, _y_enc = self._sample(n_samples, y_dist)
         X_syn = self._decode_X(x_np)
-        y_syn = pd.Series([int(target_value)] * len(X_syn), name="target")
+        y_syn = pd.Series([int(target_value)] * len(X_syn), name=self._y_train.name if self._y_train is not None else LABEL_COL)
         return X_syn, y_syn
 

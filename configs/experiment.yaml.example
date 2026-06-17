@@ -1,7 +1,7 @@
 defaults:
   - _self_
 
-# Секция оценки
+# Evaluation section
 evaluation:
   metrics: 
     - accuracy

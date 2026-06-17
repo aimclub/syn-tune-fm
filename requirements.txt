@@ -1,40 +1,45 @@
 # --- Core Framework ---
-hydra-core>=1.3.0          # Управление конфигурациями
-omegaconf                  # Работа с YAML конфигами
+hydra-core>=1.3.0          # Configuration management
+omegaconf                  # YAML configuration handling
 
 # --- Data Manipulation & Math ---
 numpy>=1.21.0
 pandas>=1.5.0
-scikit-learn>=1.0.0        # Метрики, сплиты, OpenML загрузчик
-optuna>=3.0.0              # Подбор гиперпараметров генераторов (Wasserstein)
+scikit-learn>=1.0.0        # Metrics, splits, OpenML loader
+imbalanced-learn>=0.12     # imblearn (runner: RandomOver/UnderSampler)
+optuna>=3.0.0              # Hyperparameter optimization (Wasserstein)
 
 # --- Target Model ---
-tabpfn>=2.0.0
+# PyPI version != checkpoint version. tabpfn 6+ defaults to model_path=auto (often TabPFN 2.6, gated).
+# Wrapper pins v2.5 by default (configs/model/tabpfn_v2.yaml: tabpfn_model_version). Use "auto" for 2.6.
+tabpfn>=6.0.0
 # git+https://github.com/Lexsi-Labs/TabTune.git
 
 # --- Generators: Traditional, VAE, GAN ---
-# SDV (Synthetic Data Vault) включает в себя CTGAN, TVAE и GaussianCopula
+# SDV (Synthetic Data Vault) includes CTGAN, TVAE and GaussianCopula
 sdv>=1.0.0                 
 
 # --- Generators: LLM based ---
 be-great                   # GReaT: Generation via Large Language Models
-transformers               # HuggingFace (нужен для GReaT)
-accelerate                 # Ускорение для LLM
+transformers               # HuggingFace (required for GReaT)
+accelerate                 # Acceleration for LLM
 
 # --- Deep Learning Backend ---
-# PyTorch нужен для TabPFN, CTGAN и GReaT.
+# PyTorch is required for TabPFN, CTGAN and GReaT.
 torch>=2.0.0
 
-# --- TabDDPM: модуль `tab_ddpm` (yandex-research/tab-ddpm) ---
-# Апстрим не публикует pip-пакет; у нас — обёртка packages/yandex-tab-ddpm (vendored tab_ddpm/).
-# Обновить исходники с GitHub: python scripts/refresh_tab_ddpm_vendor.py
--e ./packages/yandex-tab-ddpm
+# --- TabDDPM: `tab_ddpm` (vendored under packages/yandex-tab-ddpm) ---
+# Do not use -e ./packages/... in this file: relative paths break when cwd != repo root.
+# After: pip install -r requirements.txt
+# Run:   pip install -r requirements-tabddpm.txt
+# (or from repo root: pip install -e packages/yandex-tab-ddpm)
+# Refresh vendor: python scripts/refresh_tab_ddpm_vendor.py
 
 # --- Visualization & Analysis ---
 matplotlib
 seaborn
-tqdm                       # Прогресс-бары для долгих экспериментов
+tqdm                       # Progress bars for long experiments
 
 # --- Development ---
-jupyter                    # Для работы с ноутбуками
-pytest                     # Для тестов
+jupyter                    # For notebooks
+pytest                     # For tests

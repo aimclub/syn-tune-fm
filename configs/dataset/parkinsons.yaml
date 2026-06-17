@@ -1,0 +1,6 @@
+# Oxford Parkinsons (UCI). Бинарная классификация по голосовым признакам; классы несбалансированы.
+name: openml
+params:
+  dataset_id: 1488
+  target_column: "Class"
+  test_size: 0.2

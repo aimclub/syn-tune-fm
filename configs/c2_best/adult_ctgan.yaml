@@ -1,0 +1,16 @@
+# @package _global_
+# Optuna best trial 50, multirun/2026-05-10/13-51-01/0
+defaults:
+  - override /dataset: adult
+  - override /generator: ctgan
+
+generator:
+  params:
+    epochs: 1000
+    batch_size: 200
+    generator_lr: 0.001
+    discriminator_lr: 0.001
+    discriminator_steps: 3
+    generator_dim: [100, 100]
+    discriminator_dim: [100, 100, 100]
+    pac: 10

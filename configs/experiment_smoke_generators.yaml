@@ -1,0 +1,22 @@
+# Быстрый smoke: мало фолдов, без HPO, короткое обучение генераторов (epochs), мало TabPFN fine-tune.
+#
+# Запуск (aleg-env или .venv), три генератора, iris:
+#   cd syn-tune-fm-1_code_only && python run_experiment.py --multirun --config-name experiment_smoke_generators \
+#     -m generator=ctgan,tvae,tabddpm dataset=iris model.params.device=cpu \
+#     hydra.sweep.dir=outputs/smoke_quick_${NIGHT_ID}
+#
+defaults:
+  - experiment_c0_c4_generators
+  - _self_
+
+experiment_setup:
+  n_folds: 2
+  run_hpo: false
+
+model:
+  params:
+    ft_epochs: 2
+
+generator:
+  params:
+    epochs: 25

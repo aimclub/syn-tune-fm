@@ -1,0 +1,13 @@
+# Boston Housing (OpenML 531). Регрессия MEDV, 506 строк, 2 категориальные фичи (CHAS, RAD).
+# Synthetic balancing: для каждой категории, отстающей от мажоритарного класса в колонке,
+# генерируются conditional samples (experiment_setup.synthetic_regression_mode=categorical_balance).
+name: openml
+params:
+  dataset_id: 531
+  target_column: MEDV
+  test_size: 0.2
+  task_type: regression
+  evaluation_metrics:
+    - rmse
+    - mae
+  hpo_js_single_column_default: CHAS
